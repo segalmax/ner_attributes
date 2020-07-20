@@ -3,6 +3,7 @@ import json
 import random
 from collections import Counter
 
+import nltk
 import pandas as pd
 import spacy
 from pathlib import Path
@@ -74,7 +75,7 @@ class AttributesIndexer(object):
     def __init__(self, cms, df, attrs_for_cms):
         self.cms = cms
         self.df = df
-        with open('../comps/attribute_extraction/function_files/attributes_dict.json') as json_file:
+        with open('comps/attribute_extraction/function_files/attributes_dict.json') as json_file:
             self.cms_attributes_definitions_dict = {k: v for k, v in json.load(json_file).iteritems() if k in attrs_for_cms}
         self.trim_df_with_needed_columns_from_db(self.df)
         self.attributes_columns = self.get_attributes_columns(self.df)
@@ -82,12 +83,12 @@ class AttributesIndexer(object):
     def run(self):
         self.df['attrs_indexes_dict'] = self.df.apply(self.annotate_row_with_indexes_of_attr_values, axis=1)
         self.remove_rows_with_overlapping_attributes()
-        df_to_csv(self.df, 'tmp/with_indexes_{ts}.csv'.format(ts=time_string()))
-        # return self.df
+        fn = 'tmp/with_indexes_{ts}.csv'.format(ts=time_string())
+        df_to_csv(self.df, fn)
+        print fn
     
     def annotate_row_with_indexes_of_attr_values(self, row):
         d = dict()
-        # todo don't check in all json
         for attr_name in self.attributes_columns:
             doc = row.product_name
             doc = doc.lower()
@@ -106,7 +107,6 @@ class AttributesIndexer(object):
                     d[attr_name] = value_start_index_in_doc, value_end_index_in_doc
         return d
     
-    # todo test indexes dont overlap
     def trim_df_with_needed_columns_from_db(self, df):
         if 'description' not in df.columns:
             self.df = DataFetchFuncs.annotate_with_product_data(df, ['description'])
@@ -272,13 +272,7 @@ class BiLSTMClassifier(object):
         pass
 
 def main():
-    # fn = '/tmp/computer_1594228867.csv'
-    # df = pd.read_csv(fn, encoding='utf-8')
-    # cms = 'computer'
-    # cms_to_relevant_attribute_names = map_cms_to_relevant_attribute_names()
-    # attrs_for_cms = cms_to_relevant_attribute_names[cms]
-    # a = AttributesIndexer(cms, df, attrs_for_cms)
-    # a.run()
+    
     fn_indexed = 'tmp/with_indexes_200719-182932.csv'
     df_indexed = pd.read_csv(fn_indexed, encoding='utf-8')
     b = SpacyClassifier(df_indexed, 'computer', '../tmp')
@@ -287,8 +281,15 @@ def main():
     print 'tse'
 
 import zipp
-# todo add brands and other attrs
-# todo choose attr keys by cms vertical
-# todo big data set with all cms verticals
+def main_create_inedexed():
+    fn = '/tmp/computer_1594228867.csv'
+    df = pd.read_csv(fn, encoding='utf-8')
+    cms = 'computer'
+    cms_to_relevant_attribute_names = map_cms_to_relevant_attribute_names()
+    attrs_for_cms = cms_to_relevant_attribute_names[cms]
+    a = AttributesIndexer(cms, df, attrs_for_cms)
+    a.run()
+
 if __name__ == '__main__':
-    import zipp
+    main_create_inedexed()
+ 
