@@ -290,3 +290,89 @@ def main_create_inedexed():
     attrs_for_cms = cms_to_relevant_attribute_names[cms]
     a = AttributesIndexer(cms, df, attrs_for_cms)
     a.run()
+
+
+import tensorflow as tf
+import keras
+import os
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import nltk
+nltk.download('averaged_perceptron_tagger')
+nltk.download('punkt')
+import itertools
+# from google.colab import drive
+# drive = drive.mount('/content/drive')
+
+
+# After hyperparams optimization
+BATCH_SIZE = 512  # Number of examples used in each iteration
+EPOCHS = 5  # Number of passes through entire dataset
+MAX_LEN = 80  # Max length of review (in words)
+EMBEDDING = 40  # Dimension of word embedding vector
+
+# path = '/content/drive/My Drive/Colab/Data sets/'
+
+
+# todo: add func to return number of distinct tags
+# tags = list(set(data["Tag"].values))
+# print("Tags:", tags)
+# n_tags = len(tags)
+# print("Number of Labels: ", n_tags)
+
+# class SentenceGetter(object):
+#     """Class to Get the sentence in this format:
+#     [(Token_1, Part_of_Speech_1, Tag_1), ..., (Token_n, Part_of_Speech_1, Tag_1)]"""
+#     def __init__(self, data):
+#         """Args:
+#             data is the pandas.DataFrame which contains the above dataset"""
+#         self.n_sent = 1
+#         self.data = data
+#         self.empty = False
+#         agg_func = lambda s: [(w, p, t) for w, p, t in zip(s["Word"].values.tolist(),
+#                                                            s["POS"].values.tolist(),
+#                                                            s["Tag"].values.tolist())]
+#         self.grouped = self.data.groupby("Sentence #").apply(agg_func)
+#         self.sentences = [s for s in self.grouped]
+class SentenceGetter(object):
+      def __init__(self, data):
+          self.data = data
+
+      # needed format is [[(w1, p1, t1), (w2, p2, t2), ...], [(w1, p1, t1), (w2, p2, t2), ...]]
+      def prepare_input(self):
+          import ast
+          output = []
+          for _, row in self.data.iterrows():
+              doc = row['product_name']
+              att_dict = ast.literal_eval(row['attrs_indexes_dict'])
+              sent_words_pos_labels = get_words_pos_labels(doc, att_dict)
+          return output
+
+
+def get_words_pos_labels(doc, att_dict):
+    words_pos_labels = []
+    words = nltk.word_tokenize(doc)
+    pos_tags = nltk.pos_tag(words)
+    for word, pos in zip(words, pos_tags):
+        label = [att if att_dict[att][0] == doc.index(word) else 'O' for att in att_dict.keys()][0]
+        words_pos_labels.append((word, pos, label))
+    return words_pos_labels
+
+
+
+if __name__ == '__main__':
+    # main_create_inedexed()
+    data = pd.read_csv('computer_with_indexes_200712-085257.csv', encoding="utf-8")
+    # data = data.fillna(method="ffill")
+    data = data[data['attrs_indexes_dict'] != u'{}']
+
+    print("Number of sentences: ", len(data))
+
+    all_tokens = [nltk.word_tokenize(s) for s in data["product_name"].values]
+    distinct_words = set(list(itertools.chain.from_iterable(all_tokens)))
+    n_words = len(distinct_words)
+    print("Number of words in the dataset: ", n_words)
+    getter = SentenceGetter(data)
+    # Get all the sentences
+    sentences = getter.prepare_input()
