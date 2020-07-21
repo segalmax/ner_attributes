@@ -302,8 +302,6 @@ import nltk
 nltk.download('averaged_perceptron_tagger')
 nltk.download('punkt')
 import itertools
-# from google.colab import drive
-# drive = drive.mount('/content/drive')
 
 
 # After hyperparams optimization
@@ -347,6 +345,7 @@ class SentenceGetter(object):
               doc = row['product_name']
               att_dict = ast.literal_eval(row['attrs_indexes_dict'])
               sent_words_pos_labels = get_words_pos_labels(doc, att_dict)
+              output.append(sent_words_pos_labels)
           return output
 
 
