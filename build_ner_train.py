@@ -313,16 +313,7 @@ MAX_LEN = 80  # Max length of review (in words)
 EMBEDDING = 40  # Dimension of word embedding vector
 
 # path = '/content/drive/My Drive/Colab/Data sets/'
-data = pd.read_csv('computer_with_indexes_200712-085257.csv', encoding="utf-8")
-# data = data.fillna(method="ffill")
-data = data[data['attrs_indexes_dict'] != u'{}']
 
-print("Number of sentences: ", len(data))
-
-all_tokens = [nltk.word_tokenize(s) for s in data["product_name"].values]
-distinct_words = set(list(itertools.chain.from_iterable(all_tokens)))
-n_words = len(distinct_words)
-print("Number of words in the dataset: ", n_words)
 
 # todo: add func to return number of distinct tags
 # tags = list(set(data["Tag"].values))
@@ -370,9 +361,18 @@ def get_words_pos_labels(doc, att_dict):
 
 
 
-getter = SentenceGetter(data)
-# Get all the sentences
-sentences = getter.prepare_input()
 if __name__ == '__main__':
-    main_create_inedexed()
- 
+    # main_create_inedexed()
+    data = pd.read_csv('computer_with_indexes_200712-085257.csv', encoding="utf-8")
+    # data = data.fillna(method="ffill")
+    data = data[data['attrs_indexes_dict'] != u'{}']
+
+    print("Number of sentences: ", len(data))
+
+    all_tokens = [nltk.word_tokenize(s) for s in data["product_name"].values]
+    distinct_words = set(list(itertools.chain.from_iterable(all_tokens)))
+    n_words = len(distinct_words)
+    print("Number of words in the dataset: ", n_words)
+    getter = SentenceGetter(data)
+    # Get all the sentences
+    sentences = getter.prepare_input()
