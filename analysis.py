@@ -41,7 +41,6 @@ from nltk.stem import WordNetLemmatizer
 from nltk.stem import PorterStemmer
 from itertools import groupby
 
-
 def get_sentese_tag_lists(filename):
     lines = []
     with open(filename) as fp:
@@ -379,19 +378,19 @@ assert len(test_X) == len(test_y)
 
 gc.collect()
 
-word2vec = KeyedVectors.load_word2vec_format("../word2vec/GoogleNews-vectors-negative300.bin.gz", limit=10000, binary=True)
+word2vec = KeyedVectors.load_word2vec_format("data\GoogleNews-vectors-negative300.bin.gz", limit=10000, binary=True)
 
 #
 
 word2vec_vocab = list(word2vec.wv.vocab.keys())
 
-common = set(word2vec_vocab).intersection(set(train_tokens))
-vocab = set(train_tokens)
+common = set(word2vec_vocab).intersection(set(flat_train_tokens_list))
+vocab = set(flat_train_tokens_list)
 percent_overlap = round(len(common) * 100 / len(vocab), 2)
 print("Common vocab (word2vec, our vocabulary): ", percent_overlap, "%")
 
-token_share = list(filter(lambda x: x in common, train_tokens))
-common_share = round(len(token_share) * 100 / len(train_tokens), 2)
+token_share = list(filter(lambda x: x in common, flat_train_tokens_list))
+common_share = round(len(token_share) * 100 / len(flat_train_tokens_list), 2)
 print("The common vocabulary covers:", common_share, "% of total tokens")
 
 """#### Observations so far
