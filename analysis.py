@@ -90,14 +90,15 @@ def get_token_tags(sentences):
 train_data_generator = list(get_sentese_tag_lists("data/trivia10k13train.bio.txt"))
 test_data_generator = list(get_sentese_tag_lists("data/trivia10k13test.bio.txt"))
 
-train_tags, train_tokens = get_token_tags(train_data_generator)
-test_tags, test_tokens = get_token_tags(test_data_generator)
+train_tokens, train_tags = get_token_tags(train_data_generator)
+test_tokens, test_tags = get_token_tags(test_data_generator)
 
 # Sentence length distribution
 lengths = list(map(lambda x: len(x), train_data_generator))
 sns.distplot(lengths)
 plt.xlabel("Number of tokens in a sentence")
 plt.ylabel("Proportion")
+plt.show()
 print("Median: ", np.median(lengths))
 print("Average: ", round(np.mean(lengths), 2))
 
@@ -108,8 +109,8 @@ def summary(item_list, limit=None):
     count_dict = dict(Counter(flat_list))
     count_items = sorted(count_dict.items(), key=lambda x: x[1], reverse=True)
     print("Number of unique items: ", len(count_items))
-    print("Average count: ", round(len(item_list) / len(count_items)), "\n")
-    total_items = len(item_list)
+    print("Average count: ", round(len(flat_list) / len(count_items)), "\n")
+    total_items = len(flat_list)
     proportion_list = []
     xlabels = []
     for i, (key, value) in enumerate(count_items):
@@ -125,6 +126,7 @@ def summary(item_list, limit=None):
     plt.xlabel("Tokens/Tag")
     plt.ylabel("Percentage of total Tokens/Tags")
     chart.set_xticklabels(chart.get_xticklabels(), rotation=45)
+    plt.show()
 
 
 summary(train_tags)
@@ -167,7 +169,8 @@ def average_entity_length(tags, start, end):
 
 # train_datasize = len(train_data_generator)#todo
 train_datasize = len(list(train_data_generator))
-print("Average length of a sentence is: ", round(len(train_tokens) / train_datasize, 2))
+flat_train_tokens_list = list(itertools.chain.from_iterable(train_tokens))
+print("Average length of a sentence is: ", round(len(flat_train_tokens_list) / train_datasize, 2))
 average_entity_length(train_tags, "B-Plot", "I-Plot")
 average_entity_length(train_tags, "B-Actor", "I-Actor")
 average_entity_length(train_tags, "B-Origin", "I-Origin")
@@ -180,7 +183,7 @@ average_entity_length(train_tags, "B-Soundtrack", "I-Soundtrack")
 
 
 def tag_presence(token_tag_tuples, tag_to_find):
-    for token, tag in token_tag_tuples:
+    for tag, token in token_tag_tuples:
         if tag == tag_to_find:
             return True
     return False
@@ -204,7 +207,8 @@ summary(train_tokens, 40)
 
 
 def words_count(tokens, limit):
-    tokens_dict = dict(Counter(tokens))
+    flat_train_tokens_list = list(itertools.chain.from_iterable(train_tokens))
+    tokens_dict = dict(Counter(flat_train_tokens_list))
     tokens_count = tokens_dict.items()
     prop_list = []
     print("Vocabulary Size: ", len(tokens_count))
@@ -214,6 +218,7 @@ def words_count(tokens, limit):
     plt.plot(prop_list)
     plt.xlabel("Counts")
     plt.ylabel("Proportion of Vocabulary (%)")
+    plt.show()
     # print("Proportion of unique words less than",limit,": ", round(tokens_filtered*100/len(tokens_dict),2),"%")
 
 

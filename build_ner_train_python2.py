@@ -17,6 +17,7 @@ from comps.product_classifier.db_data_fetch import DataFetchFuncs
 from lib.help_functions import df_to_csv, read_excel_range_to_df
 from lib.time_utils import time_string
 from itertools import izip, islice, tee
+from nltk.tokenize import TreebankWordTokenizer as twt
 
 
 def consecutive_indexes(iterable, n):
@@ -192,14 +193,25 @@ class SpacyClassifier(object):
         for ent in doc.ents:
             print ent.label_, ent.text
 
+#####################
 
 def get_product_tokens_and_tags(product_doc, att_dict):
     tokens, tags = [], []
-    for word in product_doc.strip().split():
+    position_to_word = {v: k for k, v in att_dict.items()}
+    words = nltk.word_tokenize(product_doc)
+    token_indexes = list(twt().span_tokenize(product_doc))
+    for word, index_in_doc in zip(words, token_indexes):
         tokens.append(word)
-        tag = [att if att_dict[att][0] == product_doc.index(word) else 'O' for att in att_dict.keys()][0]
+        tag = position_to_word.get(index_in_doc, 'O')
         tags.append(tag)
     return tokens, tags
+
+
+def tag_presence(data_for_presence, find_tag):
+    for token, tag in data_for_presence:
+        if tag == find_tag:
+            return True
+    return False
 
 
 class BiLSTMClassifier(object):
@@ -211,7 +223,7 @@ class BiLSTMClassifier(object):
         import ast
         all_tokens = []
         all_tags = []
-        self.df = self.df[self.df['attrs_indexes_dict'] != u'{}']
+        # self.df = self.df[self.df['attrs_indexes_dict'] != u'{}']
         for _, row in self.df.iterrows():
             product_doc = row['product_name']
             att_dict = ast.literal_eval(row['attrs_indexes_dict'])
@@ -270,7 +282,13 @@ class BiLSTMClassifier(object):
         print 'test'
 
     def tag_presence_percent(self):
-        pass
+        tags_counter = dict(Counter(self.tags))
+        tags_counter = sorted(tags_counter.items(), key=lambda x: x[1], reverse=True)
+        for key, value in tags_counter:
+            sentence_with_tag = len(list(filter(lambda x: tag_presence(x, key), self.df['product_name'])))
+            print("Percentage of sentences having " + key[2:], " are: ", round(sentence_with_tag*100/len(self.df),2), "%")
+
+
 
 def main():
     
