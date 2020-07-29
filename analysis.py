@@ -7,7 +7,6 @@ Original file is located at
     https://colab.research.google.com/drive/1LEpB2ZVaYWKc5xgENwpl8WYVqct_QlWI
 """
 import itertools
-
 import numpy as np
 import os
 import re
@@ -46,7 +45,7 @@ def get_sentese_tag_lists(filename):
     with open(filename) as fp:
         for line in fp:
             lines.append(line)
-    
+
     sentences = (list(g) for k, g in groupby(lines, key=lambda x: x != '\n') if k)
     # for sentence in sentences:
     #     yield sentence
@@ -59,7 +58,7 @@ def get_sentese_tag_lists(filename):
             tag, token = tag_and_token.split('\t')
             if '\n' not in token:
                 raise
-            token=token.replace('\n','')
+            token = token.replace('\n', '')
             tags_in_sentence.append(tag)
             tokens_in_sentence.append(token)
         list_of_lists_of_tags.append(tags_in_sentence)
@@ -70,11 +69,9 @@ def get_sentese_tag_lists(filename):
     return tags_tokens_tuple_list
 
 
-
-
 def get_token_tags(sentences):
-    list_of_tokens_lists=[]
-    list_of_tags_lists=[]
+    list_of_tokens_lists = []
+    list_of_tags_lists = []
     for sentence in sentences:
         tokens_list, tags_list = [], []
         for tag, token in sentence:
@@ -82,12 +79,16 @@ def get_token_tags(sentences):
             tokens_list.append(token)
         list_of_tokens_lists.append(tokens_list)
         list_of_tags_lists.append(tags_list)
-    return list_of_tags_lists,list_of_tokens_lists
+    return list_of_tags_lists, list_of_tokens_lists
 
 
 """# 1.0 Exploratory Analysis"""
-train_data_generator = list(get_sentese_tag_lists("data/trivia10k13train.bio.txt"))
-test_data_generator = list(get_sentese_tag_lists("data/trivia10k13test.bio.txt"))
+path = '/content/drive/My Drive/Colab/Data sets/'
+train_filepath = os.path.join(path, 'trivia10k13train.bio.txt')
+test_filepath = os.path.join(path, 'trivia10k13test.bio.txt')
+
+train_data_generator = list(get_sentese_tag_lists(train_filepath))
+test_data_generator = list(get_sentese_tag_lists(test_filepath))
 
 train_tags, train_tokens = get_token_tags(train_data_generator)
 test_tags, test_tokens = get_token_tags(test_data_generator)
@@ -192,11 +193,13 @@ def average_starts(generator, tags, dataset_size):
     flat_list = list(itertools.chain.from_iterable(tags))
     tags_counter = dict(Counter(flat_list))
     tags_counter = sorted(tags_counter.items(), key=lambda x: x[1], reverse=True)
-    
+
     for key, value in tags_counter:
-        if key.startswith("B"):#todo remove/change 'B'
-            sentence_with_tag = len(list(filter(lambda token_tag_tuples: tag_presence(token_tag_tuples, key), generator)))
-            print("Percentage of sentences having " + key[2:], " are: ", round(sentence_with_tag * 100 / dataset_size, 2), "%")
+        if key.startswith("B"):  # todo remove/change 'B'
+            sentence_with_tag = len(
+                list(filter(lambda token_tag_tuples: tag_presence(token_tag_tuples, key), generator)))
+            print("Percentage of sentences having " + key[2:], " are: ",
+                  round(sentence_with_tag * 100 / dataset_size, 2), "%")
 
 
 average_starts(train_data_generator, train_tags, train_datasize)
@@ -206,7 +209,7 @@ summary(train_tokens, 40)
 
 
 def words_count(tokens, limit):
-    flat_train_tokens_list = list(itertools.chain.from_iterable(train_tokens))
+    flat_train_tokens_list = list(itertools.chain.from_iterable(tokens))
     tokens_dict = dict(Counter(flat_train_tokens_list))
     tokens_count = tokens_dict.items()
     prop_list = []
@@ -276,7 +279,7 @@ def replace_nt(sentence):
             sentence[i] = ("not", tag1)
         elif sentence[i][0] == "ca":
             sentence[i] = ("can", tag1)
-    
+
     return sentence
 
 
@@ -325,7 +328,7 @@ checks(test_tokens)
 ## 3.1 Approach
 
 ### Step 1: Setting up a baseline
-The pipeline follows as
+The pipeline follows as 
 Sentence Level Embeddings > Classifier > Metrics and Reports
 We try different embeddings like TF-IDF, Word2Vec and use Logistic Regression
 
@@ -336,10 +339,10 @@ For a sentence with N words, consider the k'th word. We use vectors of k-3,k-2,k
 
 
 def stack(sentence, window=3):
-    y = [tag for tag,token in sentence]
-    tokens = [token for tag,token in sentence]
+    y = [x[0] for x in sentence]
+    tokens = [x[1] for x in sentence]
     X = []
-    
+
     for i in range(len(tokens)):
         left_pad = max(window - i, 0)
         right_pad = max(window - len(tokens) + i + 1, 0)
@@ -377,8 +380,7 @@ assert len(train_X) == len(train_y)
 assert len(test_X) == len(test_y)
 
 gc.collect()
-
-word2vec = KeyedVectors.load_word2vec_format("data\GoogleNews-vectors-negative300.bin.gz", limit=10000, binary=True)
+word2vec = KeyedVectors.load_word2vec_format('data/GoogleNews-vectors-negative300.bin.gz', limit=10000, binary=True)
 
 #
 
@@ -396,7 +398,7 @@ print("The common vocabulary covers:", common_share, "% of total tokens")
 """#### Observations so far
 1. Pre-trained word2vec does not cover our vocabulary. This is obvious because our vocabulary contains a number of names. We don't expect the pretraind models to have all the names in the universe
 2. We can move forward in one of the two options - 1) Make our own embeddings 2) Think of some workaround for the words that don't exist in the word2vec vocabulary
-3. Let's brainstorm approach 2.
+3. Let's brainstorm approach 2. 
     1. Another option is to replace OOV words with UNK (Unknown) token and then make embeddings
     2. Another possible workaround is to use character embeddings to build word embeddings for OOV (Out of Vocab) words.
 
@@ -415,7 +417,7 @@ print("The common vocabulary covers:", common_share, "% of total tokens")
 6. Pros and cons of approach 2.
     1. Pro - Replacing with UNK token is very easy
     2. Con - We might lose a lot of information because the model will consider nearly 35% of training tokens to be the same.
-    3. Pro - character level embeddings can still preserve some information, compared to UNK token
+    3. Pro - character level embeddings can still preserve some information, compared to UNK token 
 
 #### Next Steps
 Try one of the options
@@ -495,7 +497,6 @@ def confusion_matrix_plot(true, model, X, label2class=label2class, class2label=c
     plot_confusion_matrix(model, X, true, display_labels=labels, normalize='all', xticks_rotation="vertical")
     plt.xlabel("Predicted")
     plt.ylabel("True")
-    plt.show()
 
 
 cm = confusion_matrix_plot(train_y, classifier, train_X)
@@ -510,7 +511,7 @@ del classifier
 
 """# 4.1 Analysis of Baseline
 
-1. Overall accuracy, and the confusion matrix looks the same for both train and validation results.
+1. Overall accuracy, and the confusion matrix looks the same for both train and validation results. 
 2. Although the accuracy is 70%, it is not the most representative measure of the model performance (because of the class imbalance)
 3. As expected, the algorithm only learn to predict the 'I-Plot' and the 'O' tag. It barely learns to predict anything else.
 4. We can try more tuning and different models, but the purpose of the baseline is to just see how good a complex model does on a simple one.
@@ -537,43 +538,19 @@ def get_data(data_generator):
     X = []
     y = []
     for pair in data_generator:
-        X.append([x[0] for x in pair])
-        y.append([x[1] for x in pair])
+        X.append([x[1] for x in pair])
+        y.append([x[0] for x in pair])
     return X, y
-
-# import dill                            #pip install dill --user
-# filename = 'globalsave.pkl'
-# dill.dump_session(filename)
-# exit()
-
-# and to load the session again:
-# dill.load_session(filename)
 
 
 X_train, y_train = get_data(train_data_generator)
 X_test, y_test = get_data(test_data_generator)
 
 # create a vocab to unique idx mapping and vice-versa
-
 PADDING_TOKEN = "PAD"
 UNKNOWN_TOKEN = "UNK"
 
-def replace_by_counts(tokens, max_count, replace_by):
-    '''
-        Replaces tokens with count<=max_counts by the token 'replace_by'
-    '''
-    counts = dict(Counter(tokens)).items()
-    vocab = [token if count > max_count else replace_by for token, count in counts]
-    return list(set(vocab))
-
-tokens = list(chain.from_iterable(X_train))
-vocab = replace_by_counts(tokens, 4, UNKNOWN_TOKEN)
-vocab.append(PADDING_TOKEN)
-idx2word = dict(enumerate(set(vocab)))
-word2idx = {value: key for key, value in idx2word.items()}
-
 labels = list(chain.from_iterable(y_train))
-labels.append(PADDING_TOKEN)
 idx2label = dict(enumerate(set(labels)))
 label2idx = {value: key for key, value in idx2label.items()}
 
@@ -630,6 +607,15 @@ check3(X_test, y_test, test_seq)
 inverse_normalized[PADDING_TOKEN] = 0
 
 
+def replace_by_counts(tokens, max_count, replace_by):
+    '''
+        Replaces tokens with count<=max_counts by the token 'replace_by'
+    '''
+    counts = dict(Counter(tokens)).items()
+    vocab = [token if count > max_count else replace_by for token, count in counts]
+    return list(set(vocab))
+
+
 #
 
 
@@ -645,6 +631,8 @@ labels = list(chain.from_iterable(y_train))
 labels.append(PADDING_TOKEN)
 idx2label = dict(enumerate(set(labels)))
 label2idx = {value: key for key, value in idx2label.items()}
+weights = np.array([0.3 + inverse_normalized[idx2label[i]] for i in range(len(idx2label))])
+weights /= np.sum(weights)
 
 
 # replace tokens by their indices from the dictionary. Same for labels
@@ -677,10 +665,10 @@ class NERDataset(Dataset):
         self.X = X
         self.y = y
         self.seq = sequence
-    
+
     def __len__(self):
         return len(self.X)
-    
+
     def __getitem__(self, idx):
         return self.X[idx], self.y[idx], self.seq[idx]
 
@@ -728,7 +716,7 @@ class NERLstm(nn.Module):
         self.max_len = max_len
         self.tagset_size = tagset_size
         self.padding_idx = padding_idx
-    
+
     def forward(self, X, seq):
         embeddings = self.word_embeddings(X)
         packed_input = pack_padded_sequence(embeddings, seq, batch_first=True, enforce_sorted=False)
@@ -858,30 +846,32 @@ for i in range(EPOCHS):
         # print(X.shape, y.shape, sequence.shape)
         sequence = sequence.to(device)
         pred = model(X, sequence)
-        loss_value = loss(y, pred, config['padding_idx'], config['tagset_size'], config["max_len"], weights=weights, device=device)
+        loss_value = loss(y, pred, config['padding_idx'], config['tagset_size'], config["max_len"], weights=weights,
+                          device=device)
         loss_value.backward()
         # print(j ,": ",round(loss_value.item(),2))
         epoch_loss += loss_value.item()
         optimizer.step()
         del X, y, sequence
         torch.cuda.empty_cache()
-    
+
     model = model.eval()
-    
+
     train_loss.append(round(epoch_loss, 3))
-    
+
     X_test = X_test.to(device)
     y_test = y_test.to(device)
     test_seq = test_seq.to(device)
-    
+
     y_pred = model(X_test, test_seq)
-    test_epoch_loss = loss(y_test, y_pred, config['padding_idx'], config['tagset_size'], config["max_len"], weights, device)
+    test_epoch_loss = loss(y_test, y_pred, config['padding_idx'], config['tagset_size'], config["max_len"], weights,
+                           device)
     test_epoch_loss = round(test_epoch_loss.item(), 3)
     test_loss.append(test_epoch_loss)
-    
+
     test_epoch_acc = round(accuracy(model, X_test, test_seq, y_test, config["padding_idx"], device), 3)
     test_accuracy.append(test_epoch_acc)
-    
+
     print("-----------Epoch: {}-----------".format(i + 1))
     print("Loss:\ntrain:{0}\ntest:{1}\n".format(round(epoch_loss, 2), test_epoch_loss))
     print("Accuracy:\ntest:{0}\n".format(test_epoch_acc))
@@ -900,7 +890,7 @@ def F1_scores(y_true, y_pred, idx, pad_idx):
     y_pred = torch.argmax(y_pred, 2)
     y_true = y_true.to("cpu").type(torch.LongTensor).numpy().reshape(-1)
     y_pred = y_pred.to("cpu").type(torch.LongTensor).numpy().reshape(-1)
-    
+
     tp = 0
     tn = 0
     fp = 0
@@ -922,11 +912,11 @@ def F1_scores(y_true, y_pred, idx, pad_idx):
                     fp += 1
                 else:
                     tn += 1
-    
+
     precision = tp / (tp + fp + 0.0001)
     recall = tp / (tp + fn + 0.0001)
     f1 = 2 * precision * recall / (precision + recall + 0.0001)
-    
+
     return round(f1, 3), round(precision, 3), round(recall, 3)
 
 
@@ -968,7 +958,7 @@ def predict_tags(sentence, model=model, word2idx=word2idx,
             tokens_idx.append(word2idx["UNK"])
         else:
             tokens_idx.append(word2idx[token])
-    
+
     tokens_idx = torch.LongTensor(tokens_idx).unsqueeze(0)
     sequence = torch.LongTensor([length])
     predictions = generate_predictions(model, tokens_idx, sequence)
