@@ -7,11 +7,6 @@ from sklearn.model_selection import train_test_split
 
 # nltk.download('punkt')
 # nltk.download('averaged_perceptron_tagger')
-def pos_tag(fn_of_data_with_indexes):
-    df = pd.read_csv(fn_of_data_with_indexes, usecols=['product_name', 'attrs_indexes_dict'])
-    text = nltk.word_tokenize("And now for something completely different")
-    nltk.pos_tag(text)
-
 
 # todo: add func to return number of distinct tags
 class SentenceGetter(object):
@@ -21,11 +16,12 @@ class SentenceGetter(object):
     def prepare_input(self):
         import ast
         output = []
-        for _, row in self.data.iterrows():
+        for ix, row in self.data.iterrows():
             doc = row['product_name']
             att_dict = ast.literal_eval(row['attrs_indexes_dict'])
             sent_words_pos_labels = get_words_pos_labels(doc, att_dict)
-            output.append(sent_words_pos_labels)
+            sent_words_pos_iob_labels = get_iob_labels(sent_words_pos_labels)
+            output.append(sent_words_pos_iob_labels)
         return output
 
 
@@ -39,6 +35,24 @@ def get_words_pos_labels(doc, att_dict):
         label = position_to_word.get(index_in_doc, 'O')
         words_pos_labels.append((word, part_of_speech, label))
     return words_pos_labels
+
+def get_iob_labels(sent_words_pos_labels):
+    list_cycle = itertools.cycle(sent_words_pos_labels)
+    next(list_cycle)
+    for i, (_ , _ ,label) in enumerate(sent_words_pos_labels[:-1]):
+        sent_words_pos_labels[i] = list(sent_words_pos_labels[i])
+        next_element = next(list_cycle)
+        if label == 'O':
+            continue
+        elif label != 'O' and next_element[2] == label:
+            sent_words_pos_labels[i][2] = 'B-{}'.format(label)
+            while next(list_cycle)[2] == label:
+                sent_words_pos_labels[i+1][2] = 'I-{}'.format(label)
+                i+=1
+        elif label != 'O' and next_element[2] == 'O':
+            sent_words_pos_labels[i][2] = 'B-{}'.format(label)
+        sent_words_pos_labels[i] = tuple(sent_words_pos_labels[i])
+    return sent_words_pos_labels
 
 
 import numpy as np
@@ -119,6 +133,14 @@ def crf_pipeline(X_train, y_train, X_test, y_test):
     print(metrics.flat_classification_report(y_test, y_pred, labels=labels, digits=3))
 
 
+def make_new_line_separated_format(sentences):
+    with open("lstm_format.txt", "x") as f:
+        for sentence in sentences:
+            # f.writelines(("%s    %s\n" % str(word, label) for word, pos, label in sentence))
+            f.writelines([(word + "\t" + label + "\n") for word, pos, label in sentence])
+            f.write("\n")
+
+
 if __name__ == '__main__':
     # main_create_inedexed()
     data = pd.read_csv(r"C:\src\ner_attributes\data\computer_with_indexes_200720-183555.csv", encoding="utf-8")
@@ -133,6 +155,8 @@ if __name__ == '__main__':
     getter = SentenceGetter(data)
     # Get all the sentences
     sentences = getter.prepare_input()
+    # convert sentences variable to tokens separated by new line and sentences
+    make_new_line_separated_format(sentences)
     # divide to test and train sets
     test_index = len(sentences)//4
     test_set = sentences[:test_index]
