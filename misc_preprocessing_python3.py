@@ -3,6 +3,7 @@ import nltk
 import pandas as pd
 from nltk.tokenize import TreebankWordTokenizer as twt
 from sklearn.model_selection import train_test_split
+import io
 
 
 # nltk.download('punkt')
@@ -133,8 +134,8 @@ def crf_pipeline(X_train, y_train, X_test, y_test):
     print(metrics.flat_classification_report(y_test, y_pred, labels=labels, digits=3))
 
 
-def make_new_line_separated_format(sentences):
-    with open("lstm_format.txt", "x") as f:
+def make_line_separated_format(sentences):
+    with io.open("lstm_format.txt", "x", encoding="utf-8") as f:
         for sentence in sentences:
             # f.writelines(("%s    %s\n" % str(word, label) for word, pos, label in sentence))
             f.writelines([(word + "\t" + label + "\n") for word, pos, label in sentence])
@@ -156,7 +157,7 @@ if __name__ == '__main__':
     # Get all the sentences
     sentences = getter.prepare_input()
     # convert sentences variable to tokens separated by new line and sentences
-    make_new_line_separated_format(sentences)
+    make_line_separated_format(sentences)
     # divide to test and train sets
     test_index = len(sentences)//4
     test_set = sentences[:test_index]
