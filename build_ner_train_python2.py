@@ -5,6 +5,10 @@ from collections import Counter
 
 import optparse
 
+import re
+
+import ast
+
 import comps.attribute_extraction.extract_from_product as guys_report_module
 from run.search_first import run_cmd
 
@@ -86,6 +90,8 @@ class AttributesIndexer(object):
     def annotate_row_with_indexes_of_attr_values(self, row):
         d = dict()
         for attr_name in self.attributes_columns:
+            if pd.isna(row[attr_name]) or row[attr_name] == '':
+                continue
             doc = row.product_name
             doc = doc.lower()
             possible_values_of_attribute_in_json = list(itertools.chain.from_iterable([syns_joined_with_coma.split(',')
@@ -97,8 +103,10 @@ class AttributesIndexer(object):
                 possible_value = possible_value.lower().strip()
                 if possible_value == '':
                     continue
-                if possible_value in doc:
-                    value_start_index_in_doc = doc.index(possible_value)
+        
+                word_delimiter_pattern = re.compile(r"\b{possible_value}\b".format(possible_value=possible_value))
+                if possible_value in re.findall(word_delimiter_pattern, doc):
+                    value_start_index_in_doc = re.finditer(word_delimiter_pattern, doc).next().start()
                     value_end_index_in_doc = value_start_index_in_doc + len(possible_value)
                     d[attr_name] = value_start_index_in_doc, value_end_index_in_doc
         return d
@@ -142,8 +150,13 @@ def concat_all_to_one_indexed_report(cms_reports_with_index_dicts_fns):
         'product_name',
         'attrs_indexes_dict',
     ]
+    # keys_in_all_dicts=ast.literal_eval(d_str) for d_str in big_df['attrs_indexes_dict'].values
+    df=pd.DataFrame([ast.literal_eval(d_str) for d_str in big_df['attrs_indexes_dict'].values])
+    big_df = big_df[first_cols + list(df.columns)]
     remaining_cols = [col for col in big_df.columns if col not in first_cols]
     big_df = big_df[first_cols + remaining_cols]
+    big_df=big_df.dropna(how='all',axis='columns')
+    
     return df_to_csv(big_df, fn)
 
 
@@ -158,7 +171,7 @@ def main():
         'lens',
         'lens_cap',
         'lens_hood',
-        
+    
         # excluded cms:
         # 'point_shoot_camera',#empty Guy's report
         # 'tablet', error in Guy's report
@@ -179,6 +192,8 @@ def main():
         else:
             attrs_for_cms = DONT_LIMIT
         report_with_indexes_dict_fn = main_create_indexed(cms, guys_report_fn, attrs_for_cms)
+        # report_with_indexes_dict_fn = 'ner_attributes/data/{cms}_with_indexes.csv'.format(ts=time_string(), cms=cms)
+
         if not report_with_indexes_dict_fn:
             print 'warning: cms', cms, 'has empty guys report'
         cms_reports_with_index_dicts_fns.append(report_with_indexes_dict_fn)

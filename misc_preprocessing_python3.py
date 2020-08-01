@@ -144,7 +144,7 @@ def make_line_separated_format(sentences):
 
 if __name__ == '__main__':
     # main_create_inedexed()
-    data = pd.read_csv(r"C:\src\ner_attributes\data\computer_with_indexes_200720-183555.csv", encoding="utf-8")
+    data = pd.read_csv(r"data\computer_with_indexes_200720-183555.csv", encoding="utf-8")
     # data = data.fillna(method="ffill")
 
     print("Number of sentences: ", len(data))
