@@ -7,7 +7,7 @@ X_train, y_train = get_data(train_data_generator)
 X_test, y_test = get_data(test_data_generator)
 
 # create a vocab to unique idx mapping and vice-versa
-
+ 
 PADDING_TOKEN = "PAD"
 UNKNOWN_TOKEN = "UNK"
 
