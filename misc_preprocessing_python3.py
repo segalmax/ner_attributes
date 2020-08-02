@@ -1,6 +1,7 @@
 import itertools
 import nltk
 import pandas as pd
+import random
 from nltk.tokenize import TreebankWordTokenizer as twt
 from sklearn.model_selection import train_test_split
 import io
@@ -64,7 +65,7 @@ def get_iob_labels(sent_words_pos_labels):
             converted_to_iob_list.extend(group)
     
     assert len(words_list) == len(pos_list) == len(converted_to_iob_list)
-    return zip(words_list, pos_list, converted_to_iob_list)
+    return list(zip(words_list, pos_list, converted_to_iob_list))
 
 
 def decide_iob_prefix(i_x_tuple):
@@ -151,10 +152,9 @@ def crf_pipeline(X_train, y_train, X_test, y_test):
     print(metrics.flat_classification_report(y_test, y_pred, labels=labels, digits=3))
 
 
-def make_line_separated_format(sentences):
-    with io.open("lstm_format.txt", "x", encoding="utf-8") as f:
+def make_line_separated_format(sentences, fn):
+    with io.open(fn, "w", encoding="utf-8") as f:
         for sentence in sentences:
-            # f.writelines(("%s    %s\n" % str(word, label) for word, pos, label in sentence))
             f.writelines([(word + "\t" + label + "\n") for word, pos, label in sentence])
             f.write("\n")
 
@@ -170,23 +170,20 @@ if __name__ == '__main__':
     distinct_words = set(list(itertools.chain.from_iterable(all_tokens)))
     n_words = len(distinct_words)
     print("Number of words in the dataset: ", n_words)
-    ### test
-    doc = 'HP Pavilion 20-c416il 19.5-inch Full HD All-in-One Desktop (Celeron J4005/4GB/1 TB/DOS/Wireless Keyboard & Mouse), Black'
-    att_dict = ast.literal_eval(
-        "{u'color': (115, 120), u'processor_name': (60, 67), u'system_memory': (74, 77), u'operating_system': (83, 86), u'features': (32, 39)}")
-    sent_words_pos_labels = get_words_pos_labels(doc, att_dict)
-    sent_words_pos_iob_labels = get_iob_labels(sent_words_pos_labels)
-    ###
+    
     getter = SentenceGetter(data)
     # Get all the sentences
     sentences = getter.prepare_input()
+    random.shuffle(sentences)
     # convert sentences variable to tokens separated by new line and sentences
-    make_line_separated_format(sentences)
     # divide to test and train sets
     test_index = len(sentences) // 4
     test_set = sentences[:test_index]
     train_set = sentences[test_index:]
-
+    
+    make_line_separated_format(train_set, fn="data/train_set_all_cms.txt")
+    make_line_separated_format(test_set, fn="data/test_set_all_cms.txt")
+    
     X_train = [sent2features(s) for s in train_set]
     y_train = [sent2labels(s) for s in train_set]
 

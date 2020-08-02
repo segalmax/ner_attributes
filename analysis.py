@@ -84,8 +84,8 @@ def get_token_tags(sentences):
 
 """# 1.0 Exploratory Analysis"""
 path = '/content/drive/My Drive/Colab/Data sets/'
-train_filepath = os.path.join(path, 'trivia10k13train.bio.txt')
-test_filepath = os.path.join(path, 'trivia10k13test.bio.txt')
+train_filepath = os.path.join(path, 'train_set_all_cms')
+test_filepath = os.path.join(path, 'test_set_all_cms')
 
 train_data_generator = list(get_sentese_tag_lists(train_filepath))
 test_data_generator = list(get_sentese_tag_lists(test_filepath))
