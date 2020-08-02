@@ -11,7 +11,6 @@ import ast
 # nltk.download('punkt')
 # nltk.download('averaged_perceptron_tagger')
 
-# todo: add func to return number of distinct tags
 class SentenceGetter(object):
     def __init__(self, data):
         self.data = data
@@ -22,7 +21,7 @@ class SentenceGetter(object):
             doc = row['product_name']
             att_dict = ast.literal_eval(row['attrs_indexes_dict'])
             sent_words_pos_labels = get_words_pos_labels(doc, att_dict)
-            sent_words_pos_iob_labels = get_iob_labels_updated(sent_words_pos_labels)
+            sent_words_pos_iob_labels = get_iob_labels(sent_words_pos_labels)
             output.append(sent_words_pos_iob_labels)
         return output
 
@@ -52,24 +51,25 @@ def get_words_pos_labels(doc, att_dict):
     return words_pos_labels
 
 
-# todo: check why I- labels are marked as I-B- and fix
-def get_iob_labels_updated(sent_words_pos_labels):
-    labels_list = [label if label != 'O' else 'O' for (_, _, label) in sent_words_pos_labels]
+def get_iob_labels(sent_words_pos_labels):
+    words_list, pos_list, labels_list = zip(*sent_words_pos_labels)
     grouped_list = [list(grp) for k, grp in itertools.groupby(labels_list)]
+    
+    converted_to_iob_list = []
     for group in grouped_list:
-        if None in group:
-            continue
-        if len(group) == 1:
-            group[0] = 'B-{}'.format(group[0])
+        if set(group) == set('O'):
+            converted_to_iob_list.extend(group)
         else:
-            # iob_tagged_group = ['B-{}'.format(group[0])] + ['I-{}'.format(group[i]) for i,_ in enumerate(group[1:])]
-            # group = iob_tagged_group
-            group = map(lambda x: 'B-{}'.format(x) if group.index(x) == 0 else 'I-{}'.format(x), group)
-    iob_labels_list = list(itertools.chain.from_iterable(grouped_list))
-    word_pos_list = [(word, pos) for (word, pos, _) in sent_words_pos_labels]
-    sent_words_pos_iob_labels = [(word, pos, iob_label) for (word, pos), iob_label in
-                                 zip(word_pos_list, iob_labels_list)]
-    return sent_words_pos_iob_labels
+            group = list(map(lambda ix_tuple: decide_iob_prefix(ix_tuple), list(enumerate(group))))
+            converted_to_iob_list.extend(group)
+    
+    assert len(words_list) == len(pos_list) == len(converted_to_iob_list)
+    return zip(words_list, pos_list, converted_to_iob_list)
+
+
+def decide_iob_prefix(i_x_tuple):
+    i, x = i_x_tuple
+    return 'B-{}'.format(x) if i == 0 else 'I-{}'.format(x)
 
 
 import numpy as np
@@ -175,7 +175,7 @@ if __name__ == '__main__':
     att_dict = ast.literal_eval(
         "{u'color': (115, 120), u'processor_name': (60, 67), u'system_memory': (74, 77), u'operating_system': (83, 86), u'features': (32, 39)}")
     sent_words_pos_labels = get_words_pos_labels(doc, att_dict)
-    sent_words_pos_iob_labels = get_iob_labels_updated(sent_words_pos_labels)
+    sent_words_pos_iob_labels = get_iob_labels(sent_words_pos_labels)
     ###
     getter = SentenceGetter(data)
     # Get all the sentences
