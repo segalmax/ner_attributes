@@ -7,7 +7,7 @@ from sklearn.model_selection import train_test_split
 import io
 import re
 import ast
-
+from collections import Counter
 
 # nltk.download('punkt')
 # nltk.download('averaged_perceptron_tagger')
@@ -40,7 +40,7 @@ def get_label(position_to_entity, word_index_in_doc):
 
 def get_words_pos_labels(doc, att_dict):
     position_to_entity = {v: k for k, v in att_dict.items()}
-    word_delimiter_pattern = re.compile(r"[^,.:;+/()' ]+")
+    word_delimiter_pattern = re.compile(r"[^,.:;+/()|' ]+")
     words = re.findall(word_delimiter_pattern, doc)
     pos_tags = nltk.pos_tag(words)
     token_indexes = [(i.start(), i.end()) for i in re.finditer(word_delimiter_pattern, doc)]
@@ -48,6 +48,14 @@ def get_words_pos_labels(doc, att_dict):
     assert len(pos_tags)   == len(token_indexes)
     for (word, part_of_speech), word_index_in_doc in zip(pos_tags, token_indexes):
         label = get_label(position_to_entity, word_index_in_doc)
+        if label in ['battery_type',
+                     'compatible_card',
+                     'lens_mount',
+                     'color',
+                     'ports',
+                     'features',
+                     ]:
+            label = 'O'
         words_pos_labels.append((word, part_of_speech, label))
     return words_pos_labels
 
@@ -155,7 +163,39 @@ def crf_pipeline(X_train, y_train, X_test, y_test):
 def make_line_separated_format(sentences, fn):
     with io.open(fn, "w", encoding="utf-8") as f:
         for sentence in sentences:
-            f.writelines([(word + "\t" + label + "\n") for word, pos, label in sentence])
+            chars_to_replace = {u'!',
+                                u'#',
+                                u'%',
+                                u'*',
+                                u'?',
+                                u'@',
+                                u'~',
+                                u'\xa0',
+                                u'\xa1',
+                                u'\xa3',
+                                u'\xac',
+                                u'\xb0',
+                                u'\xb1',
+                                u'\xb8',
+                                u'\xd7',
+                                u'\xe2',
+                                u'\xe3',
+                                u'\xef',
+                                u'\xff',
+                                u'\u02dc',
+                                u'\u03c6',
+                                u'\u201a',
+                                u'\u201c',
+                                u'\u201d',
+                                u'\u2026',
+                                u'\u2033',
+                                u'\u20ac',
+                                u'\uff08',
+                                u'\uff09',
+                                u'\uff0c',
+                                u'\ufffd'}
+        
+            f.writelines([(label + "\t" + ''.join([c for c in word if c not in chars_to_replace]) + "\n") for word, pos, label in sentence])
             f.write("\n")
 
 
@@ -170,23 +210,34 @@ if __name__ == '__main__':
     distinct_words = set(list(itertools.chain.from_iterable(all_tokens)))
     n_words = len(distinct_words)
     print("Number of words in the dataset: ", n_words)
-    
+
     getter = SentenceGetter(data)
     # Get all the sentences
     sentences = getter.prepare_input()
-    random.shuffle(sentences)
-    # convert sentences variable to tokens separated by new line and sentences
-    # divide to test and train sets
-    test_index = len(sentences) // 4
-    test_set = sentences[:test_index]
-    train_set = sentences[test_index:]
+    w, p, l = zip(*itertools.chain.from_iterable(sentences))
+    labels_counter = dict(Counter(l))
+
+    for i in range(100):
+        print('iteration', i)
+        random.shuffle(sentences)
+        # convert sentences variable to tokens separated by new line and sentences
+        # divide to test and train sets
+        test_index = len(sentences) // 4
+        test_set = sentences[:test_index]
+        train_set = sentences[test_index:]
+        unique_labels_in_train = set([l for _, _, l in itertools.chain.from_iterable(train_set)])
+        unique_labels_in_test = set([l for _, _, l in itertools.chain.from_iterable(test_set)])
     
+        if unique_labels_in_train == unique_labels_in_test:
+            break
+
     make_line_separated_format(train_set, fn="data/train_set_all_cms.txt")
     make_line_separated_format(test_set, fn="data/test_set_all_cms.txt")
-    
-    X_train = [sent2features(s) for s in train_set]
-    y_train = [sent2labels(s) for s in train_set]
 
-    X_test = [sent2features(s) for s in test_set]
-    y_test = [sent2labels(s) for s in test_set]
-    crf_pipeline(X_train, y_train, X_test, y_test)
+    #
+    # X_train = [sent2features(s) for s in train_set]
+    # y_train = [sent2labels(s) for s in train_set]
+    #
+    # X_test = [sent2features(s) for s in test_set]
+    # y_test = [sent2labels(s) for s in test_set]
+    # crf_pipeline(X_train, y_train, X_test, y_test)

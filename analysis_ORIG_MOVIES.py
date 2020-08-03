@@ -39,176 +39,14 @@ from textblob import Word
 from nltk.stem import WordNetLemmatizer
 from nltk.stem import PorterStemmer
 from itertools import groupby
+import io
 
 def get_sentese_tag_lists(filename):
-    # data=u"UTF-8 DATA"
-    # udata=data.encode().decode("utf-8")
-    # asciidata=udata.encode("ascii","ignore")
-    #
-    # file_content = open(filename, 'r').read()
-    # file_content = ''.join(str(ord(c)) for c in file_content)
-    # new_filename = filename + '_ASCII.txt'
-    # open(new_filename, 'w').write(file_content)
-    #
-    
-    chars_to_replace = [
-        '”',
-        '%',
-        ' ',
-        '@',
-        '#',
-        'φ',
-        'ÿ',
-        '�',
-        '¡',
-        '°',
-        '?',
-        '×',
-        '±',
-        '，',
-        '…',
-        '（',
-        '）',
-        'â',
-        '€',
-        '~',
-        'ï',
-        '¸',
-        '!',
-        '″',
-        'ã',
-        '£',
-        '‚',
-        '¬',
-        '˜',
-        '“',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        'φ',
-        'φ',
-        'φ',
-        'φ',
-        'φ',
-        'φ',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        'φ',
-        'φ',
-        'φ',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        'φ',
-        'φ',
-        'φ',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        'φ',
-        'φ',
-        'φ',
-        'ã',
-        'ã',
-        'ã',
-        'ã',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        'φ',
-        'φ',
-        'φ',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        '*',
-        'φ',
-        'φ',
-        'φ',
-        'φ',
-        'φ',
-        'φ',
-        'φ',
-        'φ',
-        'φ',
-        'φ',
-        'φ',
-        'φ',
-        'φ',
-        'φ',
-        'φ',
-        'ã',
-        'ã',
-        'ã',
-        'ã',
-        'φ',
-        'φ',
-        'φ',
-    ]
     lines = []
-    with open(filename, encoding='utf-8') as fp:
+    with open(filename) as fp:
         for line in fp:
-            # for char in chars_to_replace:
-            # line = line.replace(char, '')
             lines.append(line)
-    
+
     sentences = (list(g) for k, g in groupby(lines, key=lambda x: x != '\n') if k)
     # for sentence in sentences:
     #     yield sentence
@@ -247,8 +85,8 @@ def get_token_tags(sentences):
 
 """# 1.0 Exploratory Analysis"""
 path = 'data/'
-train_filepath = os.path.join(path, 'train_set_all_cms.txt')
-test_filepath = os.path.join(path, 'test_set_all_cms.txt')
+train_filepath = os.path.join(path, 'trivia10k13test.bio.txt')
+test_filepath = os.path.join(path, 'trivia10k13train.bio.txt')
 
 train_data_generator = list(get_sentese_tag_lists(train_filepath))
 test_data_generator = list(get_sentese_tag_lists(test_filepath))
@@ -266,7 +104,7 @@ print("Median: ", np.median(lengths))
 print("Average: ", round(np.mean(lengths), 2))
 
 
-def summary(item_list, limit=30):  # @todo: restore limit = None
+def summary(item_list, limit=30): #@todo: restore limit = None
     flat_list = list(itertools.chain.from_iterable(item_list))
     # count_dict = dict(Counter(flat_list))#todo?
     count_dict = dict(Counter(flat_list))
@@ -334,8 +172,6 @@ def average_entity_length(tags, start, end):
 train_datasize = len(list(train_data_generator))
 flat_train_tokens_list = list(itertools.chain.from_iterable(train_tokens))
 print("Average length of a sentence is: ", round(len(flat_train_tokens_list) / train_datasize, 2))
-
-
 # average_entity_length(train_tags, "B-Plot", "I-Plot")
 # average_entity_length(train_tags, "B-Actor", "I-Actor")
 # average_entity_length(train_tags, "B-Origin", "I-Origin")
@@ -596,6 +432,7 @@ char2vec = Word2Vec(vocab, size=300, sg=1, seed=42)
 
 
 def get_wordvector(token, word_model=word2vec, char_model=char2vec):
+    print(token)
     if token in word_model.wv.vocab:
         return word_model.wv[token]
     else:
@@ -603,10 +440,7 @@ def get_wordvector(token, word_model=word2vec, char_model=char2vec):
         if token == "PAD":
             return vector
         for char in token.lower():
-            try:
-                vector = np.add(vector, char_model.wv[char])
-            except Exception:
-                vector = char_model.wv['_']
+            vector = np.add(vector, char_model.wv[char])
         return vector
 
 
@@ -946,7 +780,6 @@ def generate_predictions(model, X, seq, device="cuda"):
     seq = seq.to(device)
     pred = model(X, seq)
     pred_labels = torch.argmax(pred, 2)
-    # print(pred_labels.view(0))
     pred_labels = pred_labels.view(-1)
     return pred_labels
 
@@ -1135,37 +968,8 @@ def predict_tags(sentence, model=model, word2idx=word2idx,
         print(token, " ----> ", idx2label[label.item()])
 
 
-sents_for_predict = '''
-HP 290-P0012in Desktop 7th Gen PDC G4560 4GB 1TB Win 10 MSO Wired Keyboard and Mouse One Year Warranty
-HP 20-c029in AIO Desktop
-Lenovo Ideacentre 310S-08IGM 90HX0006IN Tower PC (J5005/4GB/1TB/DOS/Integrated Graphics), Silver  --  desktop
-Lenovo V520 Slim Tower(10NNA01SHF) Gen 7 B250/ i3-7100 3.9G 2C/4GB DDR4 2400/1TB/ ODD/Win 10 HSL/No Wifi+BT/ 85%Efficiency/19.5Monitor
-Lenovo Ideacentre 310S 90HX004MIN Desktop (Celeron J4005/4GB/1TB HDD/DOS/Integrated Graphics), Silver
-HP S01 Slim SO1-pF0111il Desktop (9th Gen i5 9400/8GB/1TB/DOS/Integrated Graphics), Jet Black
-LENOVO V520 Tower 10NLA011IH Gen7 B250/ i5-7400 3.0G 4C/ 4GB DDR4 2400/ 1TB/ No ODD and OS/ 19.5Monitor/ Internal Speaker
-ASUS Desktop (Pentium/4GB/1TB/Win 10) + 19 inch Monitor  --  desktop + monitor combo
-HITSAN 3IN1 Din Rail LED Display Voltage Current Frequency Meter 80-300V 200-450V 0-100A Voltmeter Ammeter Three in one with Extra CT Color 80 to 300V
-diymore 3 in 1 Fuse Power Supply Socket Top Quality Three in one Socket for 3D Printer Accessory/Parts
-ASUS Desktop (i5-8400 /4GB RAM/1TB HDD/Win 10) + 24 inch Monitor  --  desktop + monitor combo
-HP Slim Tower Desktop (Pentium/4GB/1TB/DOS) + 19 inch Monitor
-Lenovo Idea Centre 310S Desktop (J5005/4GB/1TB/DOS) + 19 inch Monitor  --  desktop + monitor combo
-XuBa 1 Pair Quickshot Rubber Grip Dual Setting Trigger Lock for Xbox One/Slim Controller
-XuBa Gaming Over-Ear Headset Headphone with Microphone Bass Earphone for PC PS4 Mobile Phone Xbox One Orange
-XuBa Gaming Over-Ear Headset Headphone with Microphone Bass Earphone for PC PS4 Mobile Phone Xbox One Blue
-XuBa Wired Crack Sports Headphone Super Bass 3.5mm Earphone Earbud with Microphone Hands Free Headset White
-Core 2 Duo, G31 Motherboard, 2GB DDR2 RAM, 1TB SATA HDD, DVD RW, 15.6" Monitor/with WiFi (20 inch Monitor)
-All in one Pc i3 4th Generation
-LENOVO 300s-08IHH 90F1001SIN INTEL PDC/2GB/500GB/19.5"LED/DOS
-HP S01 Slim SO1-pF0112in Desktop (9th Gen i5 9400/8GB/1TB/Windows 10, Home/Integrated Graphics), Jet Black
-Lenovo V520 Tower(10NLA01AIG) Gen7 B250/ i3-7100 3.9G 2C/ 4GB DDR4 2400/ 1TB/ No ODD/ Win10P/ 85%Efficiency /19.5Monitor/ Internal Speaker
+predict_tags("Swades starring shahrukh khan describes the state of rural india very well")
 
+predict_tags("Amir khan plays mahavir phogat in the real life based film dangal")
 
-'''
-for s in sents_for_predict.split('\n'):
-    if s != '':
-        print(s)
-        print(predict_tags(s))
-
-# todo why slash not separates
-# todo why the label in predict_tags is cut in the end
-# todo why color not predicted? maybe more labels have this problem?
+predict_tags("sholay is said to be one of the greates film of its time")
