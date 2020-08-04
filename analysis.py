@@ -423,29 +423,29 @@ propoer nouns (names).
 
 
 def replace(sentence, to_replace, replace_by):
-    for i, (token, tag) in enumerate(sentence):
+    for i, (tag, token) in enumerate(sentence):
         if token == to_replace:
-            sentence[i] = (replace_by, tag)
+            sentence[i] = (tag, replace_by)
     return sentence
 
 
 def replace_num(sentence, replace_by="NUM"):
-    for i, (token, tag) in enumerate(sentence):
+    for i, (tag, token) in enumerate(sentence):
         if token.isnumeric():
-            sentence[i] = (replace_by, tag)
+            sentence[i] = (tag, replace_by)
     return sentence
 
 
-def replace_nt(sentence):
-    sentence = list(filter(lambda x: x[0] != "t", sentence))
-    for i in range(len(sentence)):
-        tag1 = sentence[i][1]
-        if sentence[i][0] == "n":
-            sentence[i] = ("not", tag1)
-        elif sentence[i][0] == "ca":
-            sentence[i] = ("can", tag1)
-
-    return sentence
+# def replace_nt(sentence):
+#     sentence = list(filter(lambda x: x[0] != "t", sentence))
+#     for i in range(len(sentence)):
+#         tag1 = sentence[i][1]
+#         if sentence[i][0] == "n":
+#             sentence[i] = ("not", tag1)
+#         elif sentence[i][0] == "ca":
+#             sentence[i] = ("can", tag1)
+#
+#     return sentence
 
 
 def normalize_word(word):
@@ -454,15 +454,15 @@ def normalize_word(word):
 
 
 def normalize_sentence(sentence):
-    return list(map(lambda x: (normalize_word(x[0]), x[1]), sentence))
+    return list(map(lambda x: (x[0], normalize_word(x[1])), sentence))
 
 
 def apply_preproc(data_generator):
-    data_generator = list(map(lambda x: replace(x, "ca", "can"), data_generator))
-    data_generator = list(map(lambda x: replace(x, "s", "is"), data_generator))
-    data_generator = list(map(lambda x: replace(x, "ll", "will"), data_generator))
-    data_generator = list(map(lambda x: replace_num(x, "NUM"), data_generator))
-    data_generator = list(map(lambda x: replace_nt(x), data_generator))
+    # data_generator = list(map(lambda x: replace(x, "ca", "can"), data_generator))
+    # data_generator = list(map(lambda x: replace(x, "s", "is"), data_generator))
+    # data_generator = list(map(lambda x: replace(x, "ll", "will"), data_generator))
+    # data_generator = list(map(lambda x: replace_num(x, "NUM"), data_generator))
+    # data_generator = list(map(lambda x: replace_nt(x), data_generator))
     data_generator = list(map(lambda x: normalize_sentence(x), data_generator))
     return data_generator
 
@@ -504,10 +504,10 @@ For a sentence with N words, consider the k'th word. We use vectors of k-3,k-2,k
 
 
 def stack(sentence, window=3):
-    y = [x[0] for x in sentence]
-    tokens = [x[1] for x in sentence]
+    y = [tag for tag, token in sentence]
+    tokens = [token for tag, token in sentence]
     X = []
-
+    
     for i in range(len(tokens)):
         left_pad = max(window - i, 0)
         right_pad = max(window - len(tokens) + i + 1, 0)
@@ -705,9 +705,9 @@ For N sentences of a uniform length M, our data is an array of shape N*M. Since 
 def get_data(data_generator):
     X = []
     y = []
-    for pair in data_generator:
-        X.append([x[1] for x in pair])
-        y.append([x[0] for x in pair])
+    for pairs in data_generator:
+        X.append([token for tag, token in pairs])  # todo
+        y.append([tag for tag, token in pairs])
     return X, y
 
 
@@ -975,7 +975,7 @@ VOCAB_SIZE = len(word2idx)
 TAGSET_SIZE = len(idx2label)
 BATCH_SIZE = 128
 LEARNING_RATE = 10e-3
-EPOCHS = 22
+EPOCHS = 2  # was 22 epochs
 NUM_LAYERS = 3
 
 config = {
@@ -988,7 +988,7 @@ config = {
     'num_layers': NUM_LAYERS
 }
 
-if torch.cuda.is_available:
+if torch.cuda.is_available():
     device = "cuda"
 else:
     device = "cpu"
@@ -1088,12 +1088,17 @@ def F1_scores(y_true, y_pred, idx, pad_idx):
 
     return round(f1, 3), round(precision, 3), round(recall, 3)
 
-
+data=[]
 total = 0
 for tag, idx in label2idx.items():
     f1, prec, rec = F1_scores(y_test, y_pred, label2idx[tag], label2idx["PAD"])
     print(tag + " stats: " + "precision: ", prec, " recall: ", rec, " F1: ", f1)
+    data.append((tag,    prec,    rec,    f1))
     total += f1
+scores_df = pd.DataFrame(columns=['tag', 'precision', 'recall', 'F1',],data=data)
+filename=os.path.join(path,'scores_df.csv')
+scores_df.to_csv(filename, encoding='utf-8', index=False)
+
 print("------ Average: {} ------".format(total / len(label2idx)))
 
 
@@ -1166,7 +1171,5 @@ for s in sents_for_predict.split('\n'):
         print(s)
         print(predict_tags(s))
 
-# todo ron why slash not separates
 # todo ron why the label in predict_tags is cut in the end
 # todo together: why color not predicted in predict_tag and also not appears in scores summary??? maybe more labels have this problem?
-#todo max disable gpu req https://stackoverflow.com/questions/53266350/how-to-tell-pytorch-to-not-use-the-gpu

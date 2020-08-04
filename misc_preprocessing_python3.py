@@ -51,7 +51,7 @@ def get_words_pos_labels(doc, att_dict):
         if label in ['battery_type',
                      'compatible_card',
                      'lens_mount',
-                     'color',
+                     # 'color',
                      'ports',
                      'features',
                      ]:
