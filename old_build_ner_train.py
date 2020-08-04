@@ -97,7 +97,7 @@ class AttributesIndexer(object):
                                                                                        for syns_joined_with_coma in self.cms_attributes_definitions_dict.get(attr_name, [])]))
             if not possible_values_of_attribute_in_json:
                 print 'warning:', attr_name, 'not in json'
-                continue  # todo
+                continue
             for possible_value in possible_values_of_attribute_in_json:
                 possible_value = possible_value.lower().strip()
                 if possible_value == '':
@@ -232,8 +232,7 @@ class BiLSTMClassifier(object):
             all_tags.append(tags)
         return all_tokens, all_tags
 
-    # todo: can't import seaborn/matplotlib, apt-get install python-tk did not work; need to solve this for
-    #  visualisations
+
     def sentence_length_distribution_analysis(self):
         lengths = list(map(lambda x: len(x), self.df['product_name']))
         ax = sns.distplot(lengths)
@@ -333,7 +332,6 @@ EMBEDDING = 40  # Dimension of word embedding vector
 # path = '/content/drive/My Drive/Colab/Data sets/'
 
 
-# todo: add func to return number of distinct tags
 # tags = list(set(data["Tag"].values))
 # print("Tags:", tags)
 # n_tags = len(tags)

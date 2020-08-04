@@ -98,7 +98,7 @@ class AttributesIndexer(object):
                                                                                        for syns_joined_with_coma in self.cms_attributes_definitions_dict.get(attr_name, [])]))
             if not possible_values_of_attribute_in_json:
                 print 'warning:', attr_name, 'not in json'
-                continue  # todo
+                continue
             for possible_value in possible_values_of_attribute_in_json:
                 possible_value = possible_value.lower().strip()
                 if possible_value == '':
@@ -199,7 +199,7 @@ def main():
         cms_reports_with_index_dicts_fns.append(report_with_indexes_dict_fn)
     
     concat_all_to_one_indexed_report(cms_reports_with_index_dicts_fns)
-    # todo check "error" in size
+    # todo max:check "error" in size
 
 if __name__ == '__main__':
     main()

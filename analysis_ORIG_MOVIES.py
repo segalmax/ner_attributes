@@ -106,7 +106,7 @@ print("Average: ", round(np.mean(lengths), 2))
 
 def summary(item_list, limit=30): #@todo: restore limit = None
     flat_list = list(itertools.chain.from_iterable(item_list))
-    # count_dict = dict(Counter(flat_list))#todo?
+    # count_dict = dict(Counter(flat_list))#changed
     count_dict = dict(Counter(flat_list))
     count_items = sorted(count_dict.items(), key=lambda x: x[1], reverse=True)
     print("Number of unique items: ", len(count_items))
@@ -135,7 +135,7 @@ summary(train_tags)
 # Number of beginnings vs Intermediate Tags
 flat_list = list(itertools.chain.from_iterable(train_tags))
 
-# tags_counts = dict(Counter(train_tags))#todo
+# tags_counts = dict(Counter(train_tags))#changed
 tags_counts = dict(Counter(flat_list))
 beginning = 0
 intermediate = 0
@@ -168,7 +168,7 @@ def average_entity_length(tags, start, end):
     print("Average length of " + start[2:], " is: ", average)
 
 
-# train_datasize = len(train_data_generator)#todo
+# train_datasize = len(train_data_generator)#changed
 train_datasize = len(list(train_data_generator))
 flat_train_tokens_list = list(itertools.chain.from_iterable(train_tokens))
 print("Average length of a sentence is: ", round(len(flat_train_tokens_list) / train_datasize, 2))
@@ -196,7 +196,7 @@ def average_starts(generator, tags, dataset_size):
     tags_counter = sorted(tags_counter.items(), key=lambda x: x[1], reverse=True)
 
     for key, value in tags_counter:
-        if key.startswith("B"):  # todo remove/change 'B'
+        if key.startswith("B"):
             sentence_with_tag = len(
                 list(filter(lambda token_tag_tuples: tag_presence(token_tag_tuples, key), generator)))
             print("Percentage of sentences having " + key[2:], " are: ",
