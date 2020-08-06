@@ -199,7 +199,6 @@ def main():
         cms_reports_with_index_dicts_fns.append(report_with_indexes_dict_fn)
     
     concat_all_to_one_indexed_report(cms_reports_with_index_dicts_fns)
-    # todo max:check "error" in size
 
 if __name__ == '__main__':
     main()

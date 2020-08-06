@@ -706,7 +706,7 @@ def get_data(data_generator):
     X = []
     y = []
     for pairs in data_generator:
-        X.append([token for tag, token in pairs])  # todo
+        X.append([token for tag, token in pairs])
         y.append([tag for tag, token in pairs])
     return X, y
 
